@@ -1,0 +1,65 @@
+---
+title: "SQL model | enforced relationships in versioned init DDL"
+---
+erDiagram
+    direction TB
+    BIKE_MODEL {
+        varchar title PK "required"
+        varchar color "nullable"
+        double weight "nullable"
+    }
+    BIKE_COMPONENT {
+        varchar title PK "required"
+        varchar bike_model_id FK "required → bike_model.title"
+        varchar color "nullable"
+        int quantity "nullable"
+    }
+    VENDOR {
+        varchar vendor_name PK "required"
+    }
+    VENDOR_BIKE_COMPONENT {
+        varchar vendor_name PK,FK "required → vendor PK"
+        varchar bikecomponent_title PK,FK "required → bike_component.title"
+        double price "nullable"
+    }
+    PURCHASE_ORDER {
+        bigint id PK "auto increment"
+        varchar bike_component_id FK "required → bike_component.title"
+        varchar production_order_number "nullable app reference; no FK"
+        int quantity "nullable"
+    }
+    BIKE_INSTANCE {
+        char36 serial_number PK "required"
+        varchar bike_model_id FK "required → bike_model.title"
+        varchar customer_order_number "nullable app reference; no FK"
+        bit shipped "required"
+    }
+    CUSTOMER_ORDER {
+        varchar customer_order_number PK "required"
+        varchar creation_date "nullable text; not timestamp"
+    }
+    CUSTOMER_ORDER_ITEM {
+        bigint id PK "auto increment"
+        varchar order_id FK "nullable → customer_order PK"
+        varchar bike_model_id FK "required → bike_model.title"
+        int quantity "nullable"
+    }
+    PRODUCTION_ORDER {
+        varchar production_order_number PK "required"
+        varchar bike_model_id FK "required → bike_model.title"
+        varchar customer_order_number "nullable app reference; no FK"
+        int quantity "nullable"
+    }
+    BIKE_MODEL ||..o{ BIKE_COMPONENT : "model FK"
+    BIKE_COMPONENT ||--o{ VENDOR_BIKE_COMPONENT : "component FK"
+    VENDOR ||--o{ VENDOR_BIKE_COMPONENT : "vendor FK"
+    BIKE_COMPONENT ||..o{ PURCHASE_ORDER : "component FK"
+    BIKE_MODEL ||..o{ BIKE_INSTANCE : "model FK"
+    BIKE_MODEL ||..o{ PRODUCTION_ORDER : "model FK"
+    BIKE_MODEL ||..o{ CUSTOMER_ORDER_ITEM : "model FK"
+    CUSTOMER_ORDER o|..o{ CUSTOMER_ORDER_ITEM : "nullable order FK"
+    SCOPE_NOT_SQL_TABLE {
+        string CODE_CONFIG_VERIFIED "8 declared FKs only"
+        string APP_REFERENCES_NOT_FKS "text attributes without constraints"
+        string NOT_LIVE_SCHEMA "versioned init DDL; see sources"
+    }

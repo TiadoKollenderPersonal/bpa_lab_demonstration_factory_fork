@@ -1,0 +1,42 @@
+---
+title: "Architecture | configured roles; 2026-11-16 local overlay"
+---
+flowchart LR
+  subgraph APP["Application and process orchestration"]
+    direction TB
+    CAM["Camunda orchestration<br/>Zeebe / Operate / Tasklist"]
+    WORK["Order / production / manufacturing workers<br/>observed in local run"]
+    CAM -->|"job + user-task control"| WORK
+  end
+  subgraph MQTT["Simulator and message broker | local profile"]
+    direction LR
+    FAKE["Fake factory<br/>periodic station + BME680"]
+    MOS["Mosquitto"]
+    ING["MQTT-to-Mongo subscriber"]
+    FAKE -->|"periodic publish observed"| MOS
+    MOS -->|"inbound delivery observed"| ING
+  end
+  subgraph STORES["Operational stores"]
+    direction TB
+    SQL["MySQL<br/>business tables + Camunda secondary"]
+    MON["MongoDB<br/>events + Trino schema metadata"]
+  end
+  subgraph ANALYTICS["Analytics consumption; not event ingestion"]
+    direction TB
+    TRI["Trino MySQL + Mongo catalogs<br/>both queries observed"]
+    GRA["Grafana configured<br/>NOT run-tested on 2026-11-16"]
+    GRA -.->|"configured consumer; no query observed"| TRI
+  end
+  WORK -->|"business writes observed"| SQL
+  WORK -->|"factory command OUTBOUND observed"| MOS
+  ING -->|"event writes observed"| MON
+  TRI -->|"read queries of both stores observed"| STORES
+  BOUND["Physical factory / broker NOT tested.<br/>Local evidence: adapted scratch Compose, cached app images (no fresh build);<br/>running services internal, but one-shot init briefly used a non-internal default network."]
+  %% Layout guide only; not physical connectivity.
+  APP ~~~ BOUND
+  classDef observed fill:#e2f4ef,stroke:#16755c,color:#102a27,stroke-width:2px;
+  classDef configured fill:#e5efff,stroke:#345c9d,color:#142d50,stroke-width:2px;
+  classDef limit fill:#fff2dc,stroke:#a26414,color:#51360f,stroke-width:2px;
+  class CAM,WORK,FAKE,MOS,ING,SQL,MON,TRI observed;
+  class GRA configured;
+  class BOUND limit;

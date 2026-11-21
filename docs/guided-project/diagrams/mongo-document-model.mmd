@@ -1,0 +1,27 @@
+---
+title: "MongoDB document view | isolated local snapshot, 2026-11-16"
+---
+flowchart TB
+  subgraph DOCS["Materialized event collections | 19:22:34 UTC snapshot"]
+    direction LR
+    ST["mqttEventStation · 43 documents<br/>_id: ObjectId · topic: String<br/>timestamp: Date — ingest receipt<br/>code: String · active: Boolean<br/>station: String · _class: String"]
+    BM["mqttEventBme680 · 43 documents<br/>_id: ObjectId · topic: String<br/>timestamp: Date — ingest receipt<br/>t, rt, h, rh, p, iaq, aq, gr: numeric<br/>_class: String"]
+    OR["mqttEventOrder · 1 document<br/>ONLY separate uncorrelated RED probe<br/>_id: ObjectId · topic: String<br/>timestamp: Date — ingest receipt<br/>state, type, processOrderReference: String<br/>_class: String"]
+    ST ~~~ BM ~~~ OR
+  end
+  subgraph META["Separate metadata and unmaterialized mappings"]
+    direction LR
+    TR["trino_schema_collection · 5 mapping documents<br/>_id: ObjectId · table: String · _class: String<br/>fields: array of {name: String, type: String, hidden: Boolean}<br/>Metadata, not event data"]
+    UN["mqttEventVgr and mqttEventLdr<br/>Declared subscribers and Trino mappings;<br/>NO data collection in this snapshot"]
+    TR ~~~ UN
+  end
+  NOTE["Source ts not stored; receipt timestamp created at ingest (clock zone unverified).<br/>No Mongo FKs, sensor-to-customer link, matched inbound order reference or proved input contract."]
+  %% Invisible layout guides stack documentation sections, not document joins.
+  DOCS ~~~ META
+  META ~~~ NOTE
+  classDef observed fill:#e2f4ef,stroke:#16755c,color:#102a27,stroke-width:2px;
+  classDef code fill:#e5efff,stroke:#345c9d,color:#142d50,stroke-width:2px;
+  classDef unknown fill:#fff2dc,stroke:#a26414,color:#51360f,stroke-width:2px;
+  class ST,BM,OR,TR observed;
+  class UN code;
+  class NOTE unknown;
