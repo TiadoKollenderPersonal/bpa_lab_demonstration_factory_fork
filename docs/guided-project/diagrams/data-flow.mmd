@@ -1,0 +1,36 @@
+---
+title: "Data flow | three distinct local paths, 2026-11-16"
+---
+flowchart TB
+  subgraph ORDER["A · Customer order → factory command | observed synthetic run"]
+    direction LR
+    C["Order-management tasks<br/>Camunda + worker"] -->|"persist order + item"| SQL["MySQL customer order + item"]
+    C -->|"reserve stock bike"| RES["MySQL bike instance"]
+    C -->|"start production process"| PROD["Production worker<br/>MySQL production order"]
+    PROD -->|"start manufacturing process"| MAN["Manufacturing worker<br/>human task completed"]
+    MAN -->|"publish command: 00000001-1"| OUT["Mosquitto f/o/order<br/>OUTBOUND"]
+    OUT -->|"delivered command"| FAKE["Local fake factory<br/>no matching reply observed"]
+  end
+  subgraph PERIODIC["B · Periodic station + BME680 | observed; independent of A"]
+    direction LR
+    FS["Fake factory presets"] -->|"publish periodic events"| SENS["Mosquitto sensor topics"]
+    SENS -->|"subscriber receives"| ING["MQTT-to-Mongo ingest"]
+    ING -->|"persist flattened payload<br/>+ receipt time"| SM["Mongo station + BME680<br/>event collections"]
+  end
+  subgraph PROBE["C · Direct RED test probe | observed; NOT an answer to A"]
+    direction LR
+    P["Manual MQTT publish<br/>M3-PROBE-NOT-CUSTOMER"] -->|"publish on INBOUND f/i/order"| IN["Mosquitto"]
+    IN -->|"subscriber receives"| MI["MQTT-to-Mongo ingest"]
+    MI -->|"persist single probe"| MO["Mongo mqttEventOrder"]
+  end
+  subgraph READS["Separate query access | observed in same local test"]
+    direction LR
+    TRI["Trino catalogs"] -->|"reads SQL"| RSQL["MySQL business tables"]
+    TRI -->|"reads Mongo"| RMON["Mongo event collections"]
+  end
+  %% Invisible layout guides separate independent paths; they are NOT event arrows.
+  ORDER ~~~ PERIODIC
+  PERIODIC ~~~ PROBE
+  PROBE ~~~ READS
+  classDef observed fill:#e2f4ef,stroke:#16755c,color:#102a27,stroke-width:2px;
+  class C,SQL,RES,PROD,MAN,OUT,FAKE,FS,SENS,ING,SM,P,IN,MI,MO,TRI,RSQL,RMON observed;

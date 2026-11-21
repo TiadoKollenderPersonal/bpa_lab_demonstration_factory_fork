@@ -1,0 +1,16 @@
+# Data Team presentation — content and speaking guide
+
+The current deliverable is [`presentation_bpa.pptx`](../slides/presentation_bpa.pptx), the **12-slide** TH-Köln presentation saved by the user: **eight core slides planned for 10:00**, followed by four optional diagram references. The PowerPoint speaker notes are the authoritative full script; this file is a short navigation aid, not an alternate deck. The four packages and the A/B approaches are proposals, not implemented fixes or cross-team commitments. Source boundaries: [evidence.md](evidence.md).
+
+| Slide | Time | Main point / speaking transition |
+| --- | --- | --- |
+| 1. Business Process Automation Lab / Data Team | 0:35 | Goal: follow an order through factory messages and stored data. Distinguish a synthetic local test from the physical lab. |
+| 2. Reliable order link across data systems | 0:55 | SQL customer and production records → outgoing MQTT order → possible incoming MongoDB event → Trino reads. The arrows are an intended path; the local test did **not** observe a matching reply. |
+| 3. Local order sent, completion not observed | 1:10 | One synthetic order had one bike from stock and another needing production. An outgoing factory order was sent; no matching reply or completed customer journey was proved. |
+| 4. Separate factory-order probe | 1:00 | The isolated snapshot had zero replies for that order and one deliberately unrelated RED probe. Periodic station and sensor messages do not establish the order link. |
+| 5. Receipt is not customer shipment | 1:20 | Incoming `ts` in the probe was not saved; MongoDB got a receipt timestamp. The outbound order's `ts` was next-day; its meaning needs agreement. No tested field proved customer shipment. |
+| 6. Four proposed packages | 1:45 | **1** Factory-event contract: agreed reference, state, time and error rules. **2** Order-to-bike links: identify matches and unknowns. **3** Process/time: keep open cases and distinguish measured from unknown times. **4** Stable Trino business outputs: Data Team maps raw sources; Dashboard Team consumes agreed outputs. Reliable upstream events remain necessary. |
+| 7. Two ways to link bikes to orders | 1:25 | **Within package 2**, A proposes using the same unique order reference on each relevant factory event **and actually matching on it**. B* proposes a station-sequence template per variant with **separate tracked state per bike instance**. The on-slide asterisk makes correct station IDs/route, a known bike/order at entry and one candidate per step explicit. Its progress is inferred; individual moves are not verified. The saved slide title currently starts “5:”; that label is not a fifth package. |
+| 8. Professor's evidence decision | 1:50 | Ask the Dashboard, combined IoT/Process Mining and Use Case teams for inputs, then ask the professor which proposed package and evidence check should come first. Do not claim the active physical-lab configuration has been checked. |
+
+**Optional appendix, outside 10:00:** slide 9 system architecture; slide 10 data flow; slide 11 SQL data model; slide 12 MongoDB document model. These reuse the existing Guided Project diagrams under `../diagrams/` for questions, not as newly measured factory traces.
